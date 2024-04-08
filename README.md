@@ -1,6 +1,6 @@
 # A Simplistic Library System
 
-This is a very simple library system built on Firebase REST API and Streamlit as the framework.
+This is a simple library system built on Firebase REST API and Streamlit as the framework.
 
 ## Notes
 - Due to Firebase REST API's limited query functions, you are always expected to strictly obey the upper and lower cases when typing either the titles or authors you are searching for.
