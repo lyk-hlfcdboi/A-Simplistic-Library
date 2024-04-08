@@ -15,19 +15,25 @@ def fetch_book_data(book_id):
         return response.json()
     return None
 
-def update_book_availability(book_id, option = 'return'):
+
+def update_book_availability(book_id, option=None):
     """Updates the book's availableNums in the database."""
     book_data = fetch_book_data(book_id)
+    print(book_data)
+    response = None  # Initialize response to None
     if book_data:
-        FIREBASE_URL =  get_book_path(hash_book(int(book_id)))
-        num_change = 1
-        if option == 'borrow':
-            num_change = -1
-        new_count = book_data['availableNums'] + num_change
-        response = requests.patch(f"{FIREBASE_URL}/{book_id}.json", \
-                                  json = {"availableNums": new_count})
+        FIREBASE_URL = get_book_path(hash_book(int(book_id)))
+        num_change = 1 if option != 'borrow' else -1
+        new_count = book_data.get('availableNums', 0) + num_change
+        response = requests.patch(f"{FIREBASE_URL}/{book_id}.json", json={"availableNums": new_count})
 
-    return response.ok
+    # Check if response has been set and is okay before returning
+    print(response)
+    if response and response.ok:
+        return True
+    else:
+        # Handle the case where the response is not okay or the book_data does not exist
+        return False
 
 def fetch_user_loans(user_id):
     USER_URL = get_user_path(hash_user(int(user_id)))
@@ -35,7 +41,7 @@ def fetch_user_loans(user_id):
     response = requests.get(user_loans_url)
     return response.json() if response.json() else []
 
-def update_user_loans(user_id, book_id, days=None, action = "borrow"):
+def update_user_loans(user_id, book_id, action, days = None):
     user_loans_url = get_user_path(hash_user(int(user_id)))
     loans = fetch_user_loans(user_id)
 
@@ -66,11 +72,12 @@ def borrow_book_page():
     if st.button("Confirm"):
         book_data = fetch_book_data(book_id)
         if book_data and book_data.get('availableNums', 0) > 0:
-            if update_book_availability(book_id, option = 'borrow'):
+            update = update_book_availability(book_id, option = 'borrow')
+            if update:
                 user_id = st.session_state['userid'] # Example: retrieve user_id from session state
-                resp = update_user_loans(user_id, book_id, days = days_to_borrow)
+                resp = update_user_loans(user_id, book_id, 'borrow', days = days_to_borrow)
                 if resp:
-                    st.success(f"Successfully borrowed {book_id}: {book_data['title']}.")
+                    st.success(f"Successfully borrowed {book_id}: < {book_data['title']} >.")
                 else: 
                     st.error('Cannot update user loans.')
             else:
@@ -94,7 +101,7 @@ def return_book_page():
             if loan['book_id'] == book_id and loan['status'] == 'borrowing':
                 # If there is matched records and if overdue.
                 if update_book_availability(book_id, option = 'return'):
-                    status, resp = update_user_loans(userid, book_id, action = "return")
+                    status, resp = update_user_loans(userid, book_id, "return")
                     if resp:
                         book_data = fetch_book_data(book_id)
                         if status == 'returned':
@@ -105,7 +112,7 @@ def return_book_page():
                     else:
                         st.error('Cannot update user returns.')
                 else:
-                    st.error('Cannot update book stocks.')
+                    st.error(f'We do not have this book <isbn: {book_id}>.')
                 return 
         st.warning('No record. Please check again.')
         return
@@ -122,11 +129,11 @@ def borrow_return_page():
     with col1:
         if st.button("Borrow"):
             st.session_state['action'] = 'borrow'
-            st.experimental_rerun()
+            #st.experimental_rerun()
     with col2:
         if st.button("Return"):
             st.session_state['action'] = 'return'
-            st.experimental_rerun()
+            #st.experimental_rerun()
 
     # Conditional rendering based on the chosen action
     if st.session_state['action'] == 'borrow':
