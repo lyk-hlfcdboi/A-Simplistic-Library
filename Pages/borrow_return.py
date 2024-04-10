@@ -39,10 +39,7 @@ def fetch_user_loans(user_id):
     USER_URL = get_user_path(hash_user(int(user_id)))
     user_loans_url = f"{USER_URL}/{user_id}/books.json"
     response = requests.get(user_loans_url)
-    if response.ok:
-        if isinstance(response.json(), dict):
-            return []
-    return response.json()
+    return response.json() if response.json() else []
 
 def update_user_loans(user_id, book_id, action, days = None):
     user_loans_url = get_user_path(hash_user(int(user_id)))
