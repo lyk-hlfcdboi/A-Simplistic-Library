@@ -22,7 +22,7 @@ def format_and_sort_loans(loans):
     df = pd.DataFrame(loans)
     df = df[["book_id","start_date","due_date","status"]]
     df.columns = ['Book ID', 'Start Date', 'Return Date', 'Status']
-    df.sort_values(by = ['Start Date', 'Return Date', 'Status'], inplace=True)
+    df.sort_values(by = ['Start Date', 'Return Date', 'Status'], ascending = [False, False, True], inplace=True)
     return df
 
 def account_management_page():
