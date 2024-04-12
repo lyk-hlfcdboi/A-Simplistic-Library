@@ -50,8 +50,6 @@ def search_books(book_title, author_name):
                 # Handle failed requests
                 print(f"Failed to fetch data from {url}, status code: {response.status_code}")
 
-
-
     # Search by Author (Exact and Contains)
     if author_name:
         name_kw = author_name.split()
@@ -77,10 +75,7 @@ def search_books(book_title, author_name):
                 else:
                     # Handle failed requests
                     print(f"Failed to fetch data from {url}, status code: {response.status_code}")
-    inter = False
-    if author_name and book_title:
-        inter = True
-    return results, inter
+    return results
 
 def render_search_page():
     st.title("Search Books")
@@ -92,7 +87,7 @@ def render_search_page():
     # Search button
     if st.button('Search'):
         # Perform the search
-        search_results, inter = search_books(book_title, author_name)
+        search_results = search_books(book_title, author_name)
         
         if not book_title and not author_name:
             st.warning("Please enter a book title or an author name to perform the search.")
