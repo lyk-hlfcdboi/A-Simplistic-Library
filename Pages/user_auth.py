@@ -1,8 +1,6 @@
 import streamlit as st
 import requests
-import datetime
 from Pages.HashingURL import hash_user, get_user_path
-import os
 import random
 import json
 
@@ -23,9 +21,11 @@ def find_username_across(username):
     return resp
 
 def generateID():
-    res = ''.join(str(random.randint(0, 9)) for _ in range(6))
-    while res == "000000" or res == "000001":
+    res = ''
+    check = 'uncheck'
+    while res == "000000" or res == "000001" or check:
         res = ''.join(str(random.randint(0, 9)) for _ in range(6))
+        check = requests.get(f'{get_user_path(hash_user(int(res)))}/{res}.json').json()
     return res
 
 def create_account(username, password):
