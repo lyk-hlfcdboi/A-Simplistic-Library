@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 from Pages import user_auth
 from Pages import HashingURL
-
+import datetime
 
 # Firebase Realtime Database URL
 
@@ -28,17 +28,26 @@ def format_and_sort_loans(loans):
 def account_management_page():
     if 'login_status' in st.session_state and st.session_state['login_status'] == 'LS':
         user_id = st.session_state['userid']
-        
+        # Current time
+        st.write(f'Refreshed at: {datetime.datetime.now().replace(microsecond = 0)}')
+
         # Fetch and process user loan information
         loans = fetch_user_loans(user_id)
         if loans:
-            df = format_and_sort_loans(loans)
-            df_html = df.head(15).to_html(index=False)
-            st.title('Borrow&Return Records')
-            st.write(df_html, unsafe_allow_html=True)
-            st.write(f"Number of books borrowed: {len(loans)}")
-            st.write(f"Number of books borrowing: {len(df[df['Status'] == 'borrowing'])}")
-            st.write(f"Number of books returned: {len(df[df['Status'].isin(['returned', 'overdue returned'])])}")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                df = format_and_sort_loans(loans)
+                df_html = df.head(15).to_html(index=False)
+
+                st.title('Borrow&Return Records')
+                st.write(df_html, unsafe_allow_html=True)
+            with col2: 
+                pass
+            with col3:
+                st.write('\n\n\n\n')
+                st.write(f"Books borrowed: {len(loans)}")
+                st.write(f"borrowing: {len(df[df['Status'] == 'borrowing'])}")
+                st.write(f"returned: {len(df[df['Status'].isin(['returned', 'overdue returned'])])}")
         else:
             st.write("No borrow/return record found.")
 

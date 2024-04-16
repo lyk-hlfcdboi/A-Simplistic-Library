@@ -8,7 +8,8 @@ from Pages.HashingURL import hash_book, get_book_path, get_user_path, hash_user
 
 
 def fetch_book_data(book_id):
-    """Fetches data for a specific book by ID."""
+    if not book_id.isdigit():
+        return 'Wrong'
     FIREBASE_URL =  get_book_path(hash_book(int(book_id)))
     response = requests.get(f"{FIREBASE_URL}/{book_id}.json")
     if response.ok:
@@ -27,12 +28,10 @@ def update_book_availability(book_id, option=None):
         new_count = book_data.get('availableNums', 0) + num_change
         response = requests.patch(f"{FIREBASE_URL}/{book_id}.json", json={"availableNums": new_count})
 
-    # Check if response has been set and is okay before returning
     print(response)
     if response and response.ok:
         return True
     else:
-        # Handle the case where the response is not okay or the book_data does not exist
         return False
 
 def fetch_user_loans(user_id):
@@ -74,25 +73,35 @@ def borrow_book_page():
     
     if st.button("Confirm"):
         book_data = fetch_book_data(book_id)
-        if book_data and book_data.get('availableNums', 0) > 0:
-            update = update_book_availability(book_id, option = 'borrow')
-            if update:
-                user_id = st.session_state['userid'] # Example: retrieve user_id from session state
-                resp = update_user_loans(user_id, book_id, 'borrow', days = days_to_borrow)
-                if resp:
-                    st.success(f"Successfully borrowed {book_id}: < {book_data['title']} >.")
-                else: 
-                    st.error('Cannot update user loans.')
+        
+        if book_data:
+            if book_data == 'Wrong':
+                st.error('Please input the correct BookID.')
+                return
+            if book_data.get('availableNums', 0) > 0:
+                update = update_book_availability(book_id, option = 'borrow')
+                if update:
+                    user_id = st.session_state['userid'] # Example: retrieve user_id from session state
+                    resp = update_user_loans(user_id, book_id, 'borrow', days = days_to_borrow)
+                    if resp:
+                        st.success(f"Successfully borrowed {book_id}: < {book_data['title']} >.")
+                    else: 
+                        st.error('Cannot update your data. Please try again.')
             else:
-                st.error('Cannot update book stock.')
+                st.error('The book is out of stock')
         else:
-            st.error("Sorry, the book is out of stock.")
+            st.error("Error. Please try again.")
+
 
 def return_book_page():
     st.title("Return")
     book_id = st.text_input("Enter the Book ID to Return")
+
     
     if st.button("Confirm Return"):
+        if not book_id.isdigit():
+            st.error('Please input the correct BookID.')
+            return 
         userid = st.session_state['userid']
         user_loans = fetch_user_loans(userid)
 
