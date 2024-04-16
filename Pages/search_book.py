@@ -133,7 +133,7 @@ def render_search_page():
             df_html = df.head(15).to_html(index=False)
             st.title('Search Results')
             if not author_exact:
-                st.write('You might be finding:')
+                st.write('You Might Be Finding:')
             st.write(df_html, unsafe_allow_html=True)
         else:
             st.error("Your book is not found.")
