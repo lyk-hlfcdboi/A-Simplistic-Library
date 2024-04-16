@@ -4,6 +4,7 @@ import pandas as pd
 import json
 from requests.exceptions import JSONDecodeError
 from Pages.HashingURL import hash_book, get_book_path
+from urllib.parse import quote
 
 def adjust_input(full_name):
 	parts = full_name.split()
@@ -24,7 +25,7 @@ bookURLS = {
 def search_books(book_title, author_name):
     # Firebase Database URL
     # book_title = adjust_input(book_title)
-    author_name = adjust_input(author_name)
+    
     results = {}; 
 
     # Search by Book Title (Exact Match)
@@ -51,31 +52,49 @@ def search_books(book_title, author_name):
                 print(f"Failed to fetch data from {url}, status code: {response.status_code}")
 
     # Search by Author (Exact and Contains)
+    author_exact = False
     if author_name:
-        name_kw = author_name.split()
-        print(name_kw)
-        for nkw in name_kw:
-            for url in bookURLS.values():   
-                response = requests.get(f"{url.strip('books')}/authorKeyWord/{nkw}.json")
-                if response.status_code == 200:
-                    try:
-                        dict_bid = response.json()
-                        if dict_bid:
-                            for id_ in dict_bid.keys():
-                                url_ = get_book_path(hash_book(int(id_)))
-                                resp = requests.get(f"{url_}/{id_}.json")
-                                if resp.status_code == 200 and resp.json():
-                                    results[id_] = resp.json()
-                                else:
-                                    continue
-                    except JSONDecodeError:
-                        # Handle the case where the response body isn't valid JSON
-                        print(f"Invalid JSON response from {url}")
-                        continue
-                else:
-                    # Handle failed requests
-                    print(f"Failed to fetch data from {url}, status code: {response.status_code}")
-    return results
+        author_name = adjust_input(author_name)
+        encode_name = quote(author_name)
+        # first exact-search author name
+        for url in bookURLS.values():
+            response = requests.get(f"{url.strip('books')}/author/{encode_name}.json")
+            if response.json():
+                for bid in response.json().keys():
+                    url_ = get_book_path(hash_book(int(bid)))
+                    bk_resp = requests.get(f"{url_}/{bid}.json")
+                    if bk_resp.status_code == 200:
+                        if bk_resp.json():
+                            results[bid] = bk_resp.json()
+                            author_exact = True
+                            print('An Exact Match Exists')
+
+        if not author_exact:
+            name_kw = author_name.split()
+            # print(name_kw)
+            
+            for nkw in name_kw:
+                for url in bookURLS.values():   
+                    response = requests.get(f"{url.strip('books')}/authorKeyWord/{nkw}.json")
+                    if response.status_code == 200:
+                        try:
+                            dict_bid = response.json()
+                            if dict_bid:
+                                for id_ in dict_bid.keys():
+                                    url_ = get_book_path(hash_book(int(id_)))
+                                    resp = requests.get(f"{url_}/{id_}.json")
+                                    if resp.status_code == 200 and resp.json():
+                                        results[id_] = resp.json()
+                                    else:
+                                        continue
+                        except JSONDecodeError:
+                            # Handle the case where the response body isn't valid JSON
+                            print(f"Invalid JSON response from {url}")
+                            continue
+                    else:
+                        # Handle failed requests
+                        print(f"Failed to fetch data from {url}, status code: {response.status_code}")
+    return results, author_exact
 
 def render_search_page():
     st.title("Search Books")
@@ -87,7 +106,7 @@ def render_search_page():
     # Search button
     if st.button('Search'):
         # Perform the search
-        search_results = search_books(book_title, author_name)
+        search_results, author_exact = search_books(book_title, author_name)
         
         if not book_title and not author_name:
             st.warning("Please enter a book title or an author name to perform the search.")
@@ -113,6 +132,8 @@ def render_search_page():
             df = pd.DataFrame(data)
             df_html = df.head(15).to_html(index=False)
             st.title('Search Results')
+            if not author_exact:
+                st.write('You might be finding:')
             st.write(df_html, unsafe_allow_html=True)
         else:
             st.error("Your book is not found.")
