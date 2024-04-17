@@ -35,6 +35,6 @@ Enter the exact ISBN of the book you want, without spaces on the head and end; t
 When returning, still enter the exact ISBN of the book you want to return. The app searches for your earliest loan record of this book.
 
 ### 5 Account Management
-You have to log in to access this page. Here, you will see the latest 15 borrow and return records and some other stats made by yourself, with start and due dates to inform a timely return. If you return a book overdue, you can expect a warning when returning it.
+You have to log in to access this page. Here, you will see the latest 15 borrowing books of yours and their status.
 
 When you borrow or return a book, you can always come back to check the updates.
