@@ -23,9 +23,13 @@ def find_username_across(username):
 def generateID():
     res = ''
     check = 'uncheck'
-    while res == "000000" or res == "000001" or check:
+    trys = 0
+    while res == "000000" or res == "000001" or check or trys > 10:
         res = ''.join(str(random.randint(0, 9)) for _ in range(6))
         check = requests.get(f'{get_user_path(hash_user(int(res)))}/{res}.json').json()
+        trys += 1
+    if trys > 10:
+        return 'NA'
     return res
 
 def create_account(username, password):
@@ -47,6 +51,8 @@ def create_account(username, password):
     # Create new user
     userid = generateID(); 
     print(userid)
+    if userid == 'NA':
+        return 'NA'
     FIREBASE_URL = get_user_path(hash_user(int(userid)))
     data = {
             "password": password,
@@ -106,7 +112,11 @@ def render_login_signup():
         elif signup_button:
             userid = create_account(user_name, password)
             if userid:
-                return userid
+                if userid != 'NA':
+                    return userid
+                else:
+                    st.error('Signup is unavailable at this time.')
+                    return 'Error'
             else:
                 return 'Error'
         else: 
