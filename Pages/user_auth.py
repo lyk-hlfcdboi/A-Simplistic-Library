@@ -46,6 +46,7 @@ def create_account(username, password):
         
     # Create new user
     userid = generateID(); 
+    print(userid)
     FIREBASE_URL = get_user_path(hash_user(int(userid)))
     data = {
             "password": password,
@@ -71,6 +72,7 @@ def login(username, password):
             st.error('Sorry, username error.')
             return 'ne'
         user_data = [i for i in response.json().values()][0]
+        #print(response.json())
 
         if user_data['password'] == password:
             return [i for i in response.json().keys()][0]

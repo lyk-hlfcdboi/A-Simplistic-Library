@@ -13,16 +13,27 @@ def fetch_user_loans(user_id):
 
     response = requests.get(f"{FIREBASE_URL}/{user_id}/books.json")
     if response.ok:
-        if isinstance(response.json(), dict):
+        if len(response.json()) == 1:
             return []
-    return response.json()
+    res = response.json()
+    del res['NoBorrowedBook']
+    return res
 
 def format_and_sort_loans(loans):
     """Formats loans data and sorts it by status, borrow on, and due to."""
-    df = pd.DataFrame(loans)
-    df = df[["book_id","start_date","due_date","status"]]
-    df.columns = ['Book ID', 'Start Date', 'Return Date', 'Status']
-    df.sort_values(by = ['Start Date', 'Return Date', 'Status'], ascending = [False, False, True], inplace=True)
+    data = []
+    for bid, rec in loans.items():
+        rec.update({'book_id': bid})
+        data.append(rec)
+    del loans
+    print(data)
+    df = pd.DataFrame(data)
+    df = df[["book_id", "start_date", "due_date"]]
+    df.columns = ['Book ID', 'Start Date', 'Return Date']
+    today = datetime.datetime.now().date()
+
+    df['Status'] = pd.to_datetime(df['Return Date']).apply(lambda due: 'Borrowing' if due.date() >= today else 'Overdue')
+    df.sort_values(by = ['Start Date', 'Return Date'], ascending = [False, False], inplace=True)
     return df
 
 def account_management_page():
@@ -33,21 +44,15 @@ def account_management_page():
 
         # Fetch and process user loan information
         loans = fetch_user_loans(user_id)
+        print(loans)
         if loans:
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                df = format_and_sort_loans(loans)
-                df_html = df.head(15).to_html(index=False)
+            df = format_and_sort_loans(loans)
+            df_html = df.head(15).to_html(index=False)
+            st.write('\n\n\n')
 
-                st.title('Borrow&Return Records')
-                st.write(df_html, unsafe_allow_html=True)
-            with col2: 
-                pass
-            with col3:
-                st.write('\n\n\n\n')
-                st.write(f"Books borrowed: {len(loans)}")
-                st.write(f"borrowing: {len(df[df['Status'] == 'borrowing'])}")
-                st.write(f"returned: {len(df[df['Status'].isin(['returned', 'overdue returned'])])}")
+            st.title('Borrowing')
+            st.write(df_html, unsafe_allow_html = True)
+            st.write(f"\n\nBooks borrowing: {len(loans)}")
         else:
             st.write("No borrow/return record found.")
 
